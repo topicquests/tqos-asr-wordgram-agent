@@ -111,6 +111,9 @@ public class WordGramModel implements IWordGramAgentModel {
 			buf.append(ix);
 			hasDot = false;
 		}
+		String id = buf.toString();
+		if (id.endsWith("."))
+			id = id.substring(0, (id.length()-1));
 		return buf.toString();
 	}
 
@@ -141,7 +144,7 @@ public class WordGramModel implements IWordGramAgentModel {
 			result.setGramType(IWordGram.COUNT_1);
 			result.markIsNew();
 			if (sentenceId != null)
-				result.addTopicLocator(sentenceId);
+				result.addSentenceId(sentenceId);
 			if (lexType != null)
 				result.addLexType(lexType);
 			if (isPunctuation)
@@ -155,7 +158,7 @@ public class WordGramModel implements IWordGramAgentModel {
 			if (lexType != null)
 				result.addLexType(lexType);
 			if (sentenceId != null)
-				result.addTopicLocator(sentenceId);
+				result.addSentenceId(sentenceId);
 		}
 		wgCache.add(gramId, result);
 		return result;	
@@ -339,7 +342,7 @@ public class WordGramModel implements IWordGramAgentModel {
 				environment.logDebug("ASRCoreModel.addWord-2 "+word+" "+g.getWords());
 			} else {
 				//The word exists, but needs to be counted
-				stats.addToKey(IASRFields.WORDS_READ);
+				stats.addToKey(IASRFields.WORDS_READ); //TODO should always count words read
 				gramId = this.singletonId(wordId);
 				//now have a singleton id
 				//get it as a singleton
@@ -402,6 +405,7 @@ public class WordGramModel implements IWordGramAgentModel {
 					buf.append(".");
 				buf.append(id);
 			}
+			// always makes an id ending with NO PERIOD
 			result = buf.toString();
 			//Sanity check: if this gram doesn't exist, make it
 			
@@ -417,7 +421,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		String words = phrase.trim();
 		environment.logDebug("ASRCoreModel.getThisWordGramByWords- "+words);
 		IWordGram result = null;
-		String id;
+		String id; 
 		if (words.indexOf(' ') > -1) {
 			String [] wx = words.split(" ");
 			StringBuilder buf = new StringBuilder();
@@ -431,6 +435,7 @@ public class WordGramModel implements IWordGramAgentModel {
 					buf.append(".");
 				buf.append(id);
 			}
+			// always makes an id ending with NO PERIOD
 			result = getThisWordGram(buf.toString());
 			environment.logDebug("ASRCoreModel.getThisWordGramByWords "+buf.toString()+" "+ids+" "+result);
 			if (result == null)

@@ -19,7 +19,6 @@ public class TestFramework {
 		//new BootTest();
 		//new FirstTest();
 		new BootstrapVocab();
-		//new MapTest();
 		//new CollectionTest();
 
 	}

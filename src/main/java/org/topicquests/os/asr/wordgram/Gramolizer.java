@@ -9,6 +9,7 @@ import java.util.*;
 
 import org.topicquests.hyperbrane.api.IHyperMembraneConstants;
 import org.topicquests.hyperbrane.api.ILexTypes;
+import org.topicquests.hyperbrane.api.IWordGram;
 import org.topicquests.os.asr.wordgram.api.IWordGramAgentModel;
 
 import com.google.common.base.Splitter;
@@ -88,6 +89,7 @@ public class Gramolizer {
 	}
 	
 	List<Map<String,Object>> gramolizeSentence(String sentence, String userId, String sentenceId) {
+		environment.logDebug("Gramolizer.gramolizeSentence- "+sentence);
 		List<Map<String,Object>> result;
 		Iterable<String> ix = Splitter.on(' ')
 			       .trimResults()
@@ -144,23 +146,23 @@ public class Gramolizer {
 				//Deal with leading special characters
 				if (startsWithTick) {
 					wordIds.add(tickId);
-					words.add(w);
+					words.add("'");
 				}
 				else if (startsWithQuote) {
 					wordIds.add(quoteId);
-					words.add(w);
+					words.add("\"");
 				}
 				else if (startsWithParen) {
 					wordIds.add(leftParenId);
-					words.add(w);
+					words.add("(");
 				}
 				else if (startsWithBrack) {
 					wordIds.add(this.leftBrackId);
-					words.add(w);
+					words.add("[");
 				}
 				else if (startsWithCurly) {
 					wordIds.add(this.leftCurlyId);
-					words.add(w);
+					words.add("{");
 				}
 				else if (startsWithCarrot) {
 					wordIds.add(leftCarrotId);
@@ -174,45 +176,46 @@ public class Gramolizer {
 				//Deal with trailing characters
 				if (endsWithComma) {
 					wordIds.add(commaId);
-					words.add(w);
+					words.add(",");
 				} else if (endsWithColon) {
 					wordIds.add(colonId);
-					words.add(w);
+					words.add(":");
 				} else if (endsWithSemicolon) {
 					wordIds.add(semicolonId);
-					words.add(w);
+					words.add(";");
 				} else if (endsWithQuestionMark) {
 					wordIds.add(questionId);
-					words.add(w);
+					words.add("?");
 				} else if (endsWithPeriod) {
 					wordIds.add(periodId);
-					words.add(w);
+					words.add(".");
 				} else if (endsWithExclaim) {
 					wordIds.add(exclaimId);
-					words.add(w);
+					words.add("!");
 				} else if (endsWithTick) {
 					wordIds.add(tickId);
-					words.add(w);
+					words.add("'");
 				} else if (endsWithQuote) {
 					wordIds.add(quoteId);
-					words.add(w);
+					words.add("\"");
 				} else if (endsWithParen) {
 					wordIds.add(rightParenId);
-					words.add(w);
+					words.add(")");
 				} else if (endsWithBrack) {
 					wordIds.add(rightBrackId);
 					words.add(w);
 				} else if (endsWithCurly) {
 					wordIds.add(rightCurlyId);
-					words.add(w);
+					words.add("]");
 				} else if (endsWithCarrot) {
 					wordIds.add(rightCarrotId);
-					words.add(w);
+					words.add("}");
 				}
 			}
 		}
 		result = vectorizeTuples(wordIds, words);
-		
+		environment.logDebug("Gramolizer.gramolizeSentence+ "+result);
+
 		return result;
 	}
 	
@@ -492,6 +495,7 @@ public class Gramolizer {
 	
 					Set<String> x = new HashSet<String>();
 					processCargo(cargo, userId, sentenceId, length, x);
+					environment.logDebug("Gramolizer.vectorsToWordGrams-2 "+x);
 					foo.addAll(x);
 				} else {
 					Iterator<List<String>>itx = cargo.iterator();
@@ -505,31 +509,45 @@ public class Gramolizer {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @param cargo
+	 * @param userId
+	 * @param sentenceId
+	 * @param length -- gramsize
+	 * @param s --  collector for gramIds
+	 */
 	void processCargo(List<List<String>>cargo, String userId, String sentenceId, int length, Set<String> s) {
 		environment.logDebug("Gramolizer.processCargo "+cargo+" "+length);
+		//[[34., 35., inflammatory, pathways]] 2
 		Set<String>result = new HashSet<String>();
 		Iterator<List<String>>itr = cargo.iterator();
 		List<String>list;
 		List<String>wordIds;
 		StringBuilder buf = new StringBuilder();
 		String words = null;
-		int len = 2*length-1;
+		int len = 2*length; //-1; // length of "list" element
+		// half the list will be ids for each of the other half, the words
 		String id;
+		IWordGram g;
 		while(itr.hasNext()) {
 			buf.setLength(0);
 			list = itr.next();
 			wordIds = new ArrayList<String>();
+			// get the wordIds, each a Terminal ID
 			for (int i=0;i<length;i++) {
 				id = list.get(i);
 				wordIds.add(id);
-				s.add(id);
 			}
+			// get the words and turn them into a phrase
 			for (int i=length;i<len;i++) {
 				buf.append(list.get(i)+" ");
 			}
 			words = buf.toString().trim();
 			environment.logDebug("GramolizerLRPx-1 "+wordIds+" "+words);
-			model.addWordGram(wordIds, words, sentenceId, "SystemUser", null, null);	
+			//[34., 35.] inflammatory <-- that's a bug; fixed by correcting "len"
+			g = model.addWordGram(wordIds, words, sentenceId, "SystemUser", null, null);	
+			s.add(g.getID());
 		}
 	}
 
