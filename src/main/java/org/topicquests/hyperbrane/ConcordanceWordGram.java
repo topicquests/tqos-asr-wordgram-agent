@@ -63,7 +63,8 @@ public class ConcordanceWordGram  implements IWordGram {
 		FOLLOW_LIST_PROPERTY	= "followerL",
 		PREVIOUS_LIST_PROPERTY	= "previousL",
 		FORMULA_ID				= "fId",
-		DB_PEDIA_OBJECT			= "dbpo";
+		DB_PEDIA_OBJECT			= "dbpo",
+		VERSION					= "version";
 
 	private boolean _isNew = false;
 	
@@ -681,39 +682,18 @@ public class ConcordanceWordGram  implements IWordGram {
 	}
 
 	@Override
-	public void addDbPediaJSON(JSONObject dbp) {
-		data.setProperty(DB_PEDIA_OBJECT, dbp.toJSONString());
+	public void setDbPediaURI(String uri) {
+		data.setProperty(DB_PEDIA_OBJECT, uri);
 	}
 
 	@Override
-	public List<JSONObject> listDbPediaObjects() {
-		List<String>l = data.listProperty(DB_PEDIA_OBJECT);
-		if (l.isEmpty())
-			return null;
-		System.out.println("GETDBPEDIA "+this.getId()+" | "+l);
-		List<JSONObject> result = new ArrayList<JSONObject>();
-		try {
-			JSONParser p;
-			Iterator<String> itr = l.iterator();
-		
-			String json;
-
-			while (itr.hasNext()) {
-				json = itr.next();
-				p = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
-				result.add((JSONObject)p.parse(json));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			environment.logError(e.getMessage(), e);
-			//TODO: to toss a RuntimeException or not
-		}
-		return result;
+	public String getDbPediaURI() {
+		return data.getProperty(DB_PEDIA_OBJECT);
 	}
 
 	@Override
 	public boolean hasDBPedia() {
-		return listDbPediaObjects() != null;
+		return getDbPediaURI() != null;
 	}
 
 	@Override
@@ -935,6 +915,17 @@ public class ConcordanceWordGram  implements IWordGram {
 	public boolean getIsStopWord() {
 		return data.getProperty(STOP_WORD_BOOLEAN) != null;
 	}
+
+	@Override
+	public void setVersion(String version) {
+		data.addToSetProperty(VERSION, version);
+	}
+
+	@Override
+	public String getVersion() {
+		return data.getProperty(VERSION);
+	}
+
 
 
 
