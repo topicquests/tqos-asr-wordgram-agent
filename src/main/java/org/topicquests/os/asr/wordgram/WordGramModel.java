@@ -134,12 +134,12 @@ public class WordGramModel implements IWordGramAgentModel {
 		if (where < 0)
 			gramId = this.singletonId(wordId);
 		boolean isPunctuation = isPunctuation(word);
-		environment.logDebug("ASRCoreModel.newTerminal- "+wordId+" "+gramId+" "+where);
+		environment.logDebug("WordGramModel.newTerminal- "+wordId+" "+gramId+" "+where);
 		IWordGram result = this.getThisWordGram(gramId);
-		environment.logDebug("ASRCoreModel.newTerminal-1 "+gramId+" "+result);
+		environment.logDebug("WordGramModel.newTerminal-1 "+gramId+" "+result);
 		if (result == null) {
 			SqlVertex v = (SqlVertex)graph.addVertex(gramId, word);
-			environment.logDebug("ASRCoreModel.newTerminal-2 "+gramId+" "+v);
+			environment.logDebug("WordGramModel.newTerminal-2 "+gramId+" "+v);
 			result = new ConcordanceWordGram(v, environment);
 			result.setGramType(IWordGram.COUNT_1);
 			result.markIsNew();
@@ -191,13 +191,13 @@ public class WordGramModel implements IWordGramAgentModel {
 	}
 	@Override
 	public IWordGram newWordGram(List<String> wordIds, String words, String userId, String topicLocator, String lexType) {
-		environment.logDebug("ASRCoreModel.newWordGram- "+wordIds);
+		environment.logDebug("WordGramModel.newWordGram- "+wordIds);
 		///////////////////
 		// MODIFIED to return <code>null</code> if too long
 		String gramId = this.wordGramId(wordIds);
 		if (wordIds.size() > 8) {
-			environment.logError("ASRCoreModel.newWordGram too many words "+wordIds, null);
-			//throw new RuntimeException("ASRCoreModel.newWordGram too many words "+wordIds);
+			environment.logError("WordGramModel.newWordGram too many words "+wordIds, null);
+			//throw new RuntimeException("WordGramModel.newWordGram too many words "+wordIds);
 			return null;
 		}
 		SqlVertex v = (SqlVertex)graph.addVertex(gramId);
@@ -205,7 +205,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		IWordGram result = new ConcordanceWordGram(v, environment);
 		result.setGramType(wordGramIdsToCountString(wordIds.size()));
 		result.markIsNew();
-		environment.logDebug("ASRCoreModel.newWordGram-X "+gramId+" "+wordIds.size()+" "+result.getGramType());
+		environment.logDebug("WordGramModel.newWordGram-X "+gramId+" "+wordIds.size()+" "+result.getGramType());
 		if (topicLocator != null)
 			result.addTopicLocator(topicLocator);
 		if (lexType != null)
@@ -221,7 +221,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		//NOTE: COUNT_1 seems to fail a lot: bad count errors on "singleton"
 		//added trim(), and added sanity hack
 		//TODO spend more time figuring out why singleton fails this test
-		environment.logDebug("ASRCoreModel.newWordGram-1 "+t);
+		environment.logDebug("WordGramModel.newWordGram-1 "+t);
 		if (t.equals(IWordGram.COUNT_1) || (wordIds.size()==1))
 			stats.addToKey(IASRFields.WG1);
 		else if (t.equals(IWordGram.COUNT_2)) //was missing else
@@ -239,17 +239,17 @@ public class WordGramModel implements IWordGramAgentModel {
 		else if (t.equals(IWordGram.COUNT_8))
 			stats.addToKey(IASRFields.WG8);
 		else {
-			String msg = "ASRCoreModel.newWordGram bad count: "+gramId+" | "+t;
+			String msg = "WordGramModel.newWordGram bad count: "+gramId+" | "+t;
 			environment.logError(msg, null);
 			//environment.getEventRegistry().addWordGramEvent(IWordGramEvent.BAD_WORDGRAM, gramId);
 		}
-		environment.logDebug("ASRCoreModel.newWordGram+ "+result.getId()+" | "+result.getGramType()+" | "+result.getGramSize());
+		environment.logDebug("WordGramModel.newWordGram+ "+result.getId()+" | "+result.getGramType()+" | "+result.getGramSize());
 		return result;
 	}
 
 	@Override
 	public IWordGram generateWordGram(String label, String userId, String sentenceId) {
-		environment.logDebug("ASRCoreModel.generate- "+label+" "+sentenceId);
+		environment.logDebug("WordGramModel.generate- "+label+" "+sentenceId);
 		IWordGram result = null;
 		String lbl = label.trim();
 		if (!lbl.equals("")) {
@@ -312,8 +312,13 @@ public class WordGramModel implements IWordGramAgentModel {
 
 	@Override	//l, null, userId, topicLocator, null
 	public String addWord(String word, String sentenceId, String userId, String lexType) {
-		String wordId = dictionary.getWordId(word);
-		environment.logDebug("ASRCoreModel.addWord- "+word+" "+wordId);
+		String wordId = "-1";
+		boolean isNew = false;
+		if (word == null)
+			return wordId;
+		//This only tests to see if it is local; if not, returns null
+		wordId = dictionary.getWordId(word);
+		environment.logDebug("WordGramModel.addWord- "+word+" "+wordId);
 		////////////////////
 		//There is a scenario in which the word exists, but is not yet in
 		// a WordGram form
@@ -321,17 +326,21 @@ public class WordGramModel implements IWordGramAgentModel {
 		
 		try {
 			IWordGram g;
+			IResult r = null;
 			if (wordId == null) {
 				//it's a new word, result = id 
-				if (word.equals("\""))
+				if (word.equals("\"")) {
 					wordId = "0";
-				else
-					wordId = dictionary.addWord(word);
-				environment.logDebug("ASRCoreModel.addWord-1 "+word+" "+wordId);
+				} else
+					r = dictionary.addWord(word);
+				wordId = (String)r.getResultObject();
+				isNew = ((Boolean)r.getResultObjectA()).booleanValue();
+				environment.logDebug("WordGramModel.addWord-1 "+word+" "+wordId+"  "+isNew);
 				//MUST SEE IF WE HAVE THIS YET?
 				g = this.newTerminal(wordId, word, userId, sentenceId, null);
 				//g.setWords(word); words already set with label
-				stats.addToKey(IASRFields.WG1);
+				if (isNew)
+					stats.addToKey(IASRFields.WG1);
 				if (sentenceId != null)
 					g.addSentenceId(sentenceId);
 				if (lexType != null)
@@ -339,7 +348,7 @@ public class WordGramModel implements IWordGramAgentModel {
 				gramId = (String)g.getId();
 				wgCache.add(gramId, g);
 				
-				environment.logDebug("ASRCoreModel.addWord-2 "+word+" "+g.getWords());
+				environment.logDebug("WordGramModel.addWord-2 "+word+" "+g.getWords());
 			} else {
 				//The word exists, but needs to be counted
 				stats.addToKey(IASRFields.WORDS_READ); //TODO should always count words read
@@ -347,7 +356,7 @@ public class WordGramModel implements IWordGramAgentModel {
 				//now have a singleton id
 				//get it as a singleton
 				g = (IWordGram)wgCache.get(gramId);
-				environment.logDebug("ASRCoreModel.addWord-3 "+wordId+" "+g);
+				environment.logDebug("WordGramModel.addWord-3 "+wordId+" "+g);
 				if (g != null) {
 					//already exists in wgCache
 					if (lexType != null)
@@ -360,11 +369,11 @@ public class WordGramModel implements IWordGramAgentModel {
 					// not in cache need to put it in cache
 					g = getThisWordGram(gramId);
 					if (g != null) {
-						environment.logDebug("ASRCoreModel.addWord-4 "+sentenceId+" "+g);
+						environment.logDebug("WordGramModel.addWord-4 "+sentenceId+" "+g);
 						if (sentenceId != null)
 							g.addSentenceId(sentenceId);
 					} else {
-						environment.logDebug("ASRCoreModel.addWord-5 "+sentenceId+" "+g);
+						environment.logDebug("WordGramModel.addWord-5 "+sentenceId+" "+g);
 						g = newTerminal(gramId, word, userId, sentenceId, lexType);
 					}
 					wgCache.add(gramId, g);
@@ -374,7 +383,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		} catch (Exception e) {
 			environment.logError(e.getMessage(), e);
 		}
-		environment.logDebug("ASRCoreModel.addWord-5 "+gramId);
+		environment.logDebug("WordGramModel.addWord-5 "+gramId);
 		return gramId;
 	}
 
@@ -392,6 +401,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		String result = null;
 		String words = phrase.trim();
 		String id;
+		IResult r;
 		if (words.indexOf(' ') > -1) {
 			String [] wx = words.split(" ");
 			StringBuilder buf = new StringBuilder();
@@ -399,7 +409,8 @@ public class WordGramModel implements IWordGramAgentModel {
 			int counter = 0;
 			for (String word:wx) {
 				
-				id = dictionary.addWord(word.trim());
+				r = dictionary.addWord(word.trim());
+				id = (String)r.getResultObject();
 				ids.add(id);
 				if (counter++ > 0)
 					buf.append(".");
@@ -410,7 +421,8 @@ public class WordGramModel implements IWordGramAgentModel {
 			//Sanity check: if this gram doesn't exist, make it
 			
 		} else {
-			id = dictionary.addWord(words);
+			r = dictionary.addWord(words);
+			id = (String)r.getResultObject();
 			result = this.singletonId(id);
 		}
 		return result;
@@ -419,9 +431,10 @@ public class WordGramModel implements IWordGramAgentModel {
 	@Override
 	public IWordGram getThisWordGramByWords(String phrase) {
 		String words = phrase.trim();
-		environment.logDebug("ASRCoreModel.getThisWordGramByWords- "+words);
+		environment.logDebug("WordGramModel.getThisWordGramByWords- "+words);
 		IWordGram result = null;
-		String id; 
+		String id;
+		IResult r;
 		if (words.indexOf(' ') > -1) {
 			String [] wx = words.split(" ");
 			StringBuilder buf = new StringBuilder();
@@ -429,7 +442,8 @@ public class WordGramModel implements IWordGramAgentModel {
 			int counter = 0;
 			for (String word:wx) {
 				
-				id = dictionary.addWord(word.trim());
+				r = dictionary.addWord(word.trim());
+				id = (String)r.getResultObject();
 				ids.add(id);
 				if (counter++ > 0)
 					buf.append(".");
@@ -437,15 +451,16 @@ public class WordGramModel implements IWordGramAgentModel {
 			}
 			// always makes an id ending with NO PERIOD
 			result = getThisWordGram(buf.toString());
-			environment.logDebug("ASRCoreModel.getThisWordGramByWords "+buf.toString()+" "+ids+" "+result);
+			environment.logDebug("WordGramModel.getThisWordGramByWords "+buf.toString()+" "+ids+" "+result);
 			if (result == null)
 				result = this.addWordGram(ids, words, null, "SystemUser", null, null);
 		} else {
-			id = dictionary.addWord(words);
+			r = dictionary.addWord(words);
+			id = (String)r.getResultObject();
 			result = getThisWordGram(this.singletonId(id));
 			if (result == null)
 				result = this.newTerminal(id, words, "SystemUser", null, null);
-			environment.logDebug("ASRCoreModel.getThisWordGramByWords "+id+" "+result);
+			environment.logDebug("WordGramModel.getThisWordGramByWords "+id+" "+result);
 		}
 		return result;
 	}
@@ -486,12 +501,12 @@ public class WordGramModel implements IWordGramAgentModel {
 	@Override
 	public IWordGram getWordGram(String id) {
 		IWordGram g = getThisWordGram(id);
-		environment.logDebug("ASRCoreModel.getWordGram- "+id+" "+g);
+		environment.logDebug("WordGramModel.getWordGram- "+id+" "+g);
 		if (g != null && g.getRedirectToId() != null) {
-			environment.logDebug("ASRCoreModel.getWordGram-1 "+id+" "+g);
+			environment.logDebug("WordGramModel.getWordGram-1 "+id+" "+g);
 			return getThisWordGram(g.getRedirectToId());
 		}
-		environment.logDebug("ASRCoreModel.getWordGram+ "+id+" "+g);
+		environment.logDebug("WordGramModel.getWordGram+ "+id+" "+g);
 		return g;
 	}
 

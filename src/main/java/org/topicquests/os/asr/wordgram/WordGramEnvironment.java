@@ -50,6 +50,7 @@ public class WordGramEnvironment extends RootEnvironment {
 		dictionaryEnvironment = new DictionaryEnvironment(configPath, logConfigPath);
 		dictionaryEnvironment.setStatisticsClient(statisticsClient);
 		dictionaryEnvironment.createDictionaryClient();
+		//now make the IDictionary
 		dictionaryEnvironment.initializeDictionary();
 		dictionary = dictionaryEnvironment.getDictionary();
 		dictionaryClient = dictionaryEnvironment.getDictionaryClient();
