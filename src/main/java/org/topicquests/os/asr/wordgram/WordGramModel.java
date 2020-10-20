@@ -77,6 +77,8 @@ public class WordGramModel implements IWordGramAgentModel {
 		return result;
 	}
 	
+	
+	
 	@Override
 	public IResult processTopicNameString(String label, String userId, String locator) {
 		IResult result = processString(label, userId, null);
@@ -398,11 +400,13 @@ public class WordGramModel implements IWordGramAgentModel {
 	}
 	
 	String getGramId(String phrase) {
+		environment.logDebug("GetGramId- "+phrase);
 		String result = null;
 		String words = phrase.trim();
 		String id;
 		IResult r;
 		if (words.indexOf(' ') > -1) {
+			environment.logDebug("GetGramId-1 ");
 			String [] wx = words.split(" ");
 			StringBuilder buf = new StringBuilder();
 			List<String>ids = new ArrayList<String>();
@@ -422,6 +426,7 @@ public class WordGramModel implements IWordGramAgentModel {
 			
 		} else {
 			r = dictionary.addWord(words);
+			environment.logDebug("GetGramId-2 "+r.getResultObject()); //is terminal
 			id = (String)r.getResultObject();
 			result = this.singletonId(id);
 		}
@@ -455,12 +460,17 @@ public class WordGramModel implements IWordGramAgentModel {
 			if (result == null)
 				result = this.addWordGram(ids, words, null, "SystemUser", null, null);
 		} else {
-			r = dictionary.addWord(words);
-			id = (String)r.getResultObject();
-			result = getThisWordGram(this.singletonId(id));
+			id = this.getGramId(phrase);
+			environment.logDebug("WordGramModel.getThisWordGramByWords-1 "+id);
+			result = this.getWordGram(id);
+			if (result == null) {
+				r = dictionary.addWord(words);
+				id = (String)r.getResultObject();
+				result = getThisWordGram(this.singletonId(id));
+			}
 			if (result == null)
 				result = this.newTerminal(id, words, "SystemUser", null, null);
-			environment.logDebug("WordGramModel.getThisWordGramByWords "+id+" "+result);
+			environment.logDebug("WordGramModel.getThisWordGramByWords+ "+id+" "+result);
 		}
 		return result;
 	}

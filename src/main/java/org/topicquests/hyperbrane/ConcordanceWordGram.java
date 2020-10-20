@@ -64,7 +64,8 @@ public class ConcordanceWordGram  implements IWordGram {
 		PREVIOUS_LIST_PROPERTY	= "previousL",
 		FORMULA_ID				= "fId",
 		DB_PEDIA_OBJECT			= "dbpo",
-		VERSION					= "version";
+		VERSION					= "version",
+		LEMMA					= "lemma";
 
 	private boolean _isNew = false;
 	
@@ -88,6 +89,7 @@ public class ConcordanceWordGram  implements IWordGram {
 	 */
 	@Override
 	public void addSentenceId(String sentenceId) {
+		environment.logDebug("ConcordanceWordGram.addSentenceId "+sentenceId+" | "+getId());
 		graph.addToVertexSetProperty((String)getId(), SENTENCES, sentenceId);
 		//synchronized(synchObject) {
 		//	data.addToSetProperty(SENTENCES, sentenceId);
@@ -924,6 +926,18 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public String getVersion() {
 		return data.getProperty(VERSION);
+	}
+
+	@Override
+	public void setLemma(String lemma) {
+		synchronized(synchObject) {
+			data.addToSetProperty(LEMMA, lemma);
+		}
+	}
+
+	@Override
+	public String getLemma() {
+		return data.getProperty(LEMMA);
 	}
 
 

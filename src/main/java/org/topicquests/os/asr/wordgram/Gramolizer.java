@@ -98,8 +98,30 @@ public class Gramolizer {
 		List<String>wordIds = new ArrayList<String>();
 		List<String>words = new ArrayList<String>();
 		//Here, we deal with all the individual words
+		//////////////////////////
+		//  Walk along a list of words
+		//	Detect if they begin or end with punctuation
+		//  Build a list of wordIds for every word and any leading or trailing punctuation
+		//  	Punctuation is stripped off the word and added as a word itself
+		//////////////////////////
+		for (String w: ix) {
+			if (w.endsWith("%")) {
+				String x = w.substring(0, (w.length()-1));
+				doWord(x, wordIds, words, userId, sentenceId);
+				doWord("%", wordIds, words, userId, sentenceId);
+			}
+			else doWord(w, wordIds, words, userId, sentenceId);
+		}
+		result = vectorizeTuples(wordIds, words);
+		environment.logDebug("Gramolizer.gramolizeSentence+ "+result);
+
+		return result;
+	}
+	
+	void doWord(String w, List<String>wordIds, List<String>words, String userId, String sentenceId ) {
 		String theWordId;
 		String theWord;
+
 		boolean endsWithComma = false;
 		boolean endsWithQuestionMark = false;
 		boolean endsWithColon = false;
@@ -118,105 +140,94 @@ public class Gramolizer {
 		boolean startsWithBrack = false;
 		boolean startsWithCarrot = false;
 		boolean startsWithCurly = false;
-		//////////////////////////
-		//  Walk along a list of words
-		//	Detect if they begin or end with punctuation
-		//  Build a list of wordIds for every word and any leading or trailing punctuation
-		//  	Punctuation is stripped off the word and added as a word itself
-		//////////////////////////
-		for (String w: ix) {
-			if (w != "") {
-				endsWithComma = endsWithComma(w);
-				endsWithQuestionMark = endsWithQuestionMark(w);
-				endsWithColon = endsWithColon(w);
-				endsWithSemicolon = endsWithSemicolon(w);
-				endsWithTick = endsWithTick(w);
-				startsWithTick = startsWithTick(w);
-				endsWithPeriod = endsWithPeriod(w);
-				endsWithParen = endsWithParen(w);
-				startsWithParen = startsWithParen(w);
-				endsWithBrack = endsWithBrack(w);
-				startsWithBrack = startsWithBrack(w);
-				endsWithCurly = endsWithCurly(w);
-				startsWithCurly = startsWithCurly(w);
-				endsWithCarrot = endsWithCarrot(w);
-				startsWithCarrot = startsWithCarrot(w);
-				endsWithCarrot = endsWithCarrot(w);
-				startsWithCarrot = startsWithCarrot(w);
-				//Deal with leading special characters
-				if (startsWithTick) {
-					wordIds.add(tickId);
-					words.add("'");
-				}
-				else if (startsWithQuote) {
-					wordIds.add(quoteId);
-					words.add("\"");
-				}
-				else if (startsWithParen) {
-					wordIds.add(leftParenId);
-					words.add("(");
-				}
-				else if (startsWithBrack) {
-					wordIds.add(this.leftBrackId);
-					words.add("[");
-				}
-				else if (startsWithCurly) {
-					wordIds.add(this.leftCurlyId);
-					words.add("{");
-				}
-				else if (startsWithCarrot) {
-					wordIds.add(leftCarrotId);
-					words.add(w);
-				}
-				theWord = cleanWord(w);
-				//Deal with the word itself, stripped of special characters
-				theWordId = model.addWord(theWord, sentenceId, userId, null);
-				wordIds.add(theWordId);
-				words.add(theWord);
-				//Deal with trailing characters
-				if (endsWithComma) {
-					wordIds.add(commaId);
-					words.add(",");
-				} else if (endsWithColon) {
-					wordIds.add(colonId);
-					words.add(":");
-				} else if (endsWithSemicolon) {
-					wordIds.add(semicolonId);
-					words.add(";");
-				} else if (endsWithQuestionMark) {
-					wordIds.add(questionId);
-					words.add("?");
-				} else if (endsWithPeriod) {
-					wordIds.add(periodId);
-					words.add(".");
-				} else if (endsWithExclaim) {
-					wordIds.add(exclaimId);
-					words.add("!");
-				} else if (endsWithTick) {
-					wordIds.add(tickId);
-					words.add("'");
-				} else if (endsWithQuote) {
-					wordIds.add(quoteId);
-					words.add("\"");
-				} else if (endsWithParen) {
-					wordIds.add(rightParenId);
-					words.add(")");
-				} else if (endsWithBrack) {
-					wordIds.add(rightBrackId);
-					words.add(w);
-				} else if (endsWithCurly) {
-					wordIds.add(rightCurlyId);
-					words.add("]");
-				} else if (endsWithCarrot) {
-					wordIds.add(rightCarrotId);
-					words.add("}");
-				}
+
+		if (w != "") {
+			endsWithComma = endsWithComma(w);
+			endsWithQuestionMark = endsWithQuestionMark(w);
+			endsWithColon = endsWithColon(w);
+			endsWithSemicolon = endsWithSemicolon(w);
+			endsWithTick = endsWithTick(w);
+			startsWithTick = startsWithTick(w);
+			endsWithPeriod = endsWithPeriod(w);
+			endsWithParen = endsWithParen(w);
+			startsWithParen = startsWithParen(w);
+			endsWithBrack = endsWithBrack(w);
+			startsWithBrack = startsWithBrack(w);
+			endsWithCurly = endsWithCurly(w);
+			startsWithCurly = startsWithCurly(w);
+			endsWithCarrot = endsWithCarrot(w);
+			startsWithCarrot = startsWithCarrot(w);
+			endsWithCarrot = endsWithCarrot(w);
+			startsWithCarrot = startsWithCarrot(w);
+			//Deal with leading special characters
+			if (startsWithTick) {
+				wordIds.add(tickId);
+				words.add("'");
+			}
+			else if (startsWithQuote) {
+				wordIds.add(quoteId);
+				words.add("\"");
+			}
+			else if (startsWithParen) {
+				wordIds.add(leftParenId);
+				words.add("(");
+			}
+			else if (startsWithBrack) {
+				wordIds.add(this.leftBrackId);
+				words.add("[");
+			}
+			else if (startsWithCurly) {
+				wordIds.add(this.leftCurlyId);
+				words.add("{");
+			}
+			else if (startsWithCarrot) {
+				wordIds.add(leftCarrotId);
+				words.add(w);
+			}
+			theWord = cleanWord(w);
+			//Deal with the word itself, stripped of special characters
+			theWordId = model.addWord(theWord, sentenceId, userId, null);
+			wordIds.add(theWordId);
+			words.add(theWord);
+			//Deal with trailing characters
+			if (endsWithComma) {
+				wordIds.add(commaId);
+				words.add(",");
+			} else if (endsWithColon) {
+				wordIds.add(colonId);
+				words.add(":");
+			} else if (endsWithSemicolon) {
+				wordIds.add(semicolonId);
+				words.add(";");
+			} else if (endsWithQuestionMark) {
+				wordIds.add(questionId);
+				words.add("?");
+			} else if (endsWithPeriod) {
+				wordIds.add(periodId);
+				words.add(".");
+			} else if (endsWithExclaim) {
+				wordIds.add(exclaimId);
+				words.add("!");
+			} else if (endsWithTick) {
+				wordIds.add(tickId);
+				words.add("'");
+			} else if (endsWithQuote) {
+				wordIds.add(quoteId);
+				words.add("\"");
+			} else if (endsWithParen) {
+				wordIds.add(rightParenId);
+				words.add(")");
+			} else if (endsWithBrack) {
+				wordIds.add(rightBrackId);
+				words.add(w);
+			} else if (endsWithCurly) {
+				wordIds.add(rightCurlyId);
+				words.add("]");
+			} else if (endsWithCarrot) {
+				wordIds.add(rightCarrotId);
+				words.add("}");
 			}
 		}
-		result = vectorizeTuples(wordIds, words);
-		environment.logDebug("Gramolizer.gramolizeSentence+ "+result);
-
-		return result;
 	}
 	
 	List<Map<String,Object>> vectorizeTuples(List<String>wordIds, List<String> words) {
