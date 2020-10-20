@@ -65,7 +65,8 @@ public class ConcordanceWordGram  implements IWordGram {
 		FORMULA_ID				= "fId",
 		DB_PEDIA_OBJECT			= "dbpo",
 		VERSION					= "version",
-		LEMMA					= "lemma";
+		LEMMA					= "lemma",
+		ONT_REF_LIST			= "ontRefs";
 
 	private boolean _isNew = false;
 	
@@ -938,6 +939,22 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public String getLemma() {
 		return data.getProperty(LEMMA);
+	}
+
+	@Override
+	public boolean hasOntReferences() {
+		List<String> l = listOntReferences();
+		return ( l != null && !l.isEmpty());
+	}
+
+	@Override
+	public void addOntReference(String uri) {
+		data.addToSetProperty(ONT_REF_LIST, uri);
+	}
+
+	@Override
+	public List<String> listOntReferences() {
+		return data.listProperty(ONT_REF_LIST);
 	}
 
 
