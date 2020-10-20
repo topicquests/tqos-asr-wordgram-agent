@@ -167,7 +167,7 @@
 		<dependency>
 			<groupId>org.topicquests</groupId>
 			<artifactId>tqos-asr-dictionary-agent</artifactId>
-			<version>0.6.1-SNAPSHOT</version>
+			<version>0.6.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.topicquests</groupId>
