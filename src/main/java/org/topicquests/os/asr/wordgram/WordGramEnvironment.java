@@ -43,6 +43,8 @@ public class WordGramEnvironment extends RootEnvironment {
 		blueprints = new BlueprintsPgEnvironment();
 		String graphName = getStringProperty("GraphName");
 		sqlGraph = blueprints.getGraph(graphName);
+ 		logDebug("Environment-0 "+graphName+" "+sqlGraph);
+
 		//STATS
 		statisticsClient = new StatisticsHttpClient(this);
  		logDebug("Environment-1 "+statisticsClient);
@@ -57,11 +59,17 @@ public class WordGramEnvironment extends RootEnvironment {
 		dictionary = dictionaryEnvironment.getDictionary();
 		//dictionary = new ConcordanceDictionary(this);
 		model = new WordGramModel(this);
+		//System.out.println("WGE-1 "+model);
 		gramolizer = new Gramolizer(this);
 		//now build the threads
-		
+		System.out.println("WGE-2 "+gramolizer);
+
 		((WordGramModel)model).setWordNetThread(gramolizer);
+		//System.out.println("WGE-3 ");
+
 		gramolizer.init();
+		//System.out.println("WGE-4 ");
+
 		wordGram = new WordGramThread(this);
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
@@ -92,6 +100,9 @@ public class WordGramEnvironment extends RootEnvironment {
 		return wordGram;
 	}
 	
+	public Gramolizer getGramolizer() {
+		return gramolizer;
+	}
 
 	public SqlGraph getSqlGraph() {
 		return sqlGraph;

@@ -54,14 +54,20 @@ public class WordGramModel implements IWordGramAgentModel {
 		stats = environment.getStatisticsClient();
 		wgCache = new LRUCache(8192);
 		dictionary = environment.getDictionary();
+		if (gramolizer == null)
+			gramolizer = environment.getGramolizer();
+		System.out.println("WGM- "+gramolizer);
+
 	}
 	
 	public void setWordNetThread(Gramolizer g) {
 		this.gramolizer = g;
+		System.out.println("WGM-2 "+gramolizer);
 	}
 	
 	@Override
 	public IResult processString(String text, String userId, String sentenceId) {
+		System.out.println("WGM.processString "+gramolizer+" "+text);
 		IResult result = new ResultPojo();
 		List<String>gramIds;
 		if (text.indexOf(' ') > -1) {
@@ -116,7 +122,7 @@ public class WordGramModel implements IWordGramAgentModel {
 		String id = buf.toString();
 		if (id.endsWith("."))
 			id = id.substring(0, (id.length()-1));
-		return buf.toString();
+		return id;
 	}
 
 	@Override
@@ -297,7 +303,8 @@ public class WordGramModel implements IWordGramAgentModel {
 	    try {
 	      conn = database.getConnection();
 	      r = conn.beginTransaction();
-	      conn.setConvRole(r);
+	      conn.setProxyRole(r);
+	      //conn.setConvRole(r);
 	      if (r.hasError())
 	    	  environment.logError("DataProvider.existsWord1: "+r.getErrorString(), null);
 
