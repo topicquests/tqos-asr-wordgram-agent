@@ -8,6 +8,8 @@ package org.topicquests.os.asr.wordgram.api;
 import org.topicquests.hyperbrane.api.IWordGram;
 import org.topicquests.support.api.IResult;
 import java.util.*;
+import org.topicquests.pg.api.IPostgresConnection;
+
 /**
  * @author jackpark
  *
@@ -15,23 +17,30 @@ import java.util.*;
 public interface IWordGramAgentModel {
 
 	/**
-	 * <code>text</code> be a word, phrase, or single sentence
+	 * <p>{@code text} be a word, phrase, or single sentence</p>
+	 * <p>In the past, we processed entire sentences. Now, we don't do that;
+	 * instead, we are interested in processing phrases which are, e.g. noun phrases,
+	 * verb phrases, etc.</p>
 	 * @param text
 	 * @param userId
 	 * @param sentenceId
-	 * @return a list of wordGramIds made for the input
+	 * @return the ID of the phrase (or terminal)'s wordgram //list of wordGramIds made for the input
 	 */
 	IResult processString(String text, String userId, String sentenceId);
+
+	IResult processString(IPostgresConnection conn, String text, String userId, String sentenceId, IResult r) throws Exception;
 
 	/**
 	 * For individual words only
 	 * @param word
 	 * @param userId
 	 * @param sentenceId
-	 * @return a wordGramId for the <code>word</code>
+	 * @return a wordGramId for the {@code word}
 	 */
 	IResult processWord(String word, String userId, String sentenceId);
-	
+
+	IResult processWord(IPostgresConnection conn, String word, String userId, String sentenceId, IResult r) throws Exception;
+
 	/**
 	 * For labels (name strings) on topics which are named entities - always nouns
 	 * @param label
@@ -40,7 +49,9 @@ public interface IWordGramAgentModel {
 	 * @return
 	 */
 	IResult processTopicNameString(String label, String userId, String locator);
-	
+
+	IResult processTopicNameString(IPostgresConnection conn, String label, String userId, String locator, IResult r) throws Exception;
+
 	/**
 	 * <p>Convert an ordered list of word identifiers to a
 	 * WordGram <em>object identifier</em></p>
@@ -77,6 +88,8 @@ public interface IWordGramAgentModel {
 	 */
 	IWordGram newTerminal(String wordId, String word, String userId, String sentenceId, String lexType);
 
+	IWordGram newTerminal(IPostgresConnection conn, String wordId, String word, String userId, String sentenceId, String lexType, IResult r) throws Exception;
+
 	
 	/**
 	 * Can return <code>null</code> if <code>wordIds</code> > 8 words long
@@ -89,6 +102,8 @@ public interface IWordGramAgentModel {
 	 */
 	IWordGram newWordGram(List<String> wordIds, String words, String userId, String topicLocator, String lexType);
 
+	IWordGram newWordGram(IPostgresConnection conn, List<String> wordIds, String words, String userId, String topicLocator, String lexType, IResult r) throws Exception;
+
 	/**
 	 * It is possible that <code>label</code> is a phrase rather than a terminal
 	 * @param label
@@ -96,7 +111,7 @@ public interface IWordGramAgentModel {
 	 * @param sentenceId
 	 * @return
 	 */
-	IWordGram generateWordGram(String label, String userId, String sentenceId);
+	//IWordGram generateWordGram(String label, String userId, String sentenceId);
 
 	/**
 	 * For the case where WordGram is for one word
@@ -113,6 +128,8 @@ public interface IWordGramAgentModel {
 	 */
 	boolean existsWordGram(String id);
 
+	boolean existsWordGram(IPostgresConnection conn, String id, IResult r);
+
 	/**
 	 * Adds to dictionary. If new word, makes singleton WordGram,
 	 * otherwise, adds sentence to the WordGram
@@ -123,6 +140,8 @@ public interface IWordGramAgentModel {
 	 * @return id of the terminal
 	 */
 	String addWord(String word, String sentenceId, String userId, String lexType);
+	
+	String addWord(IPostgresConnection conn, String word, String sentenceId, String userId, String lexType, IResult r) throws Exception;
 
 	/**
 	 * <p>Will make the wordgram if it doesn't exist; can handle terminal
@@ -132,6 +151,8 @@ public interface IWordGramAgentModel {
 	 * @return
 	 */
 	IWordGram getThisWordGramByWords(String words);
+
+	IWordGram getThisWordGramByWords(IPostgresConnection conn, String words, IResult r) throws Exception;
 
 	/**
 	 * Creates WordGram or adds sentence to existing
@@ -145,6 +166,8 @@ public interface IWordGramAgentModel {
 	 */
 	IWordGram addWordGram(List<String>wordIds, String words, String sentenceId, String userId, String topicLocator, String lexType);
 
+	IWordGram addWordGram(IPostgresConnection conn, List<String>wordIds, String words, String sentenceId, String userId, String topicLocator, String lexType, IResult r) throws Exception;
+
 	/**
 	 * Returns a {@link IWordGram} which is either identified by
 	 * <code>id</code> or by a <code>RedirectIdProperty</code> contained in the
@@ -153,13 +176,17 @@ public interface IWordGramAgentModel {
 	 * @return can return <code>null</code>
 	 */
 	IWordGram getWordGram(String id);
-	
+
+	IWordGram getWordGram(IPostgresConnection conn, String id, IResult r) throws Exception;
+
 	/**
 	 * Returns only the {@link IWordGram} identified by <code>id</code>
 	 * @param id
 	 * @return can return <code>null</code>
 	 */
 	IWordGram getThisWordGram(String id);
+
+	IWordGram getThisWordGram(IPostgresConnection conn, String id, IResult r) throws Exception ;
 
 	/**
 	 * Unbundle <code>wordGramId</code> to a list of individual word identifiers
@@ -177,5 +204,7 @@ public interface IWordGramAgentModel {
 	 * @param context
 	 */
 	void connectWordGrams(String source, String target, String relationLabel, String context);
+
+	void connectWordGrams(IPostgresConnection conn, String source, String target, String relationLabel, String context, IResult r) throws Exception;
 
 }

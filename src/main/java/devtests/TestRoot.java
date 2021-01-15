@@ -8,6 +8,7 @@ package devtests;
 
 import org.topicquests.os.asr.wordgram.WordGramEnvironment;
 import org.topicquests.os.asr.wordgram.WordGramThread;
+import org.topicquests.os.asr.wordgram.api.IWordGramAgentModel;
 
 /**
  * @author jackpark
@@ -16,6 +17,7 @@ import org.topicquests.os.asr.wordgram.WordGramThread;
 public class TestRoot {
 	protected WordGramEnvironment environment;
 	protected WordGramThread wordGramThread;
+	protected IWordGramAgentModel model;
 
 	/**
 	 * 
@@ -23,6 +25,7 @@ public class TestRoot {
 	public TestRoot() {
 		environment = new WordGramEnvironment("wordgram-props.xml", "logger.properties");
 		environment.createStatisticsClient();
+		model = environment.getModel();
 		wordGramThread = environment.getWordGramThread();
 	}
 

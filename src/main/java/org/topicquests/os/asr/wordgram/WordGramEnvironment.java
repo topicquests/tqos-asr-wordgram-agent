@@ -32,7 +32,7 @@ public class WordGramEnvironment extends RootEnvironment {
 	private IDictionary dictionary;
 	private WordGramThread wordGram;
 	private BlueprintsPgEnvironment blueprints;
-	private Gramolizer gramolizer;
+	//private Gramolizer gramolizer;
 	/**
 	 * @param configPath
 	 * @param logConfigPath
@@ -60,14 +60,13 @@ public class WordGramEnvironment extends RootEnvironment {
 		//dictionary = new ConcordanceDictionary(this);
 		model = new WordGramModel(this);
 		//System.out.println("WGE-1 "+model);
-		gramolizer = new Gramolizer(this);
+		//gramolizer = new Gramolizer(this);
 		//now build the threads
-		System.out.println("WGE-2 "+gramolizer);
+		//System.out.println("WGE-2 "+gramolizer);
 
-		((WordGramModel)model).setWordNetThread(gramolizer);
+		//((WordGramModel)model).setWordNetThread(gramolizer);
 		//System.out.println("WGE-3 ");
 
-		gramolizer.init();
 		//System.out.println("WGE-4 ");
 
 		wordGram = new WordGramThread(this);
@@ -100,9 +99,9 @@ public class WordGramEnvironment extends RootEnvironment {
 		return wordGram;
 	}
 	
-	public Gramolizer getGramolizer() {
-		return gramolizer;
-	}
+//	public Gramolizer getGramolizer() {
+//		return gramolizer;
+//	}
 
 	public SqlGraph getSqlGraph() {
 		return sqlGraph;

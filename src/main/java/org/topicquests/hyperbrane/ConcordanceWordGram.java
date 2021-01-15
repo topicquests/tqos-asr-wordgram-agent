@@ -13,6 +13,8 @@ import net.minidev.json.parser.JSONParser;
 import org.topicquests.hyperbrane.api.ILexTypes;
 import org.topicquests.hyperbrane.api.IWordGram;
 import org.topicquests.os.asr.wordgram.WordGramEnvironment;
+import org.topicquests.pg.api.IPostgresConnection;
+import org.topicquests.support.api.IResult;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -91,16 +93,27 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void addSentenceId(String sentenceId) {
 		environment.logDebug("ConcordanceWordGram.addSentenceId "+sentenceId+" | "+getId());
-		graph.addToVertexSetProperty((String)getId(), SENTENCES, sentenceId);
-		//synchronized(synchObject) {
-		//	data.addToSetProperty(SENTENCES, sentenceId);
-		//}
+		synchronized(data) {
+			data.addToSetProperty(SENTENCES, sentenceId);
+		}
 	}
-	
+	@Override
+	public void addSentenceId(IPostgresConnection conn, String sentenceId, IResult r) throws Exception {
+		synchronized(data) {
+			data.addToSetProperty(conn, SENTENCES, sentenceId, r);
+		}
+	}
+
 	@Override
 	public void removeSentenceId(String sentenceId) {
 		synchronized(synchObject) {
 			data.deleteProperty(SENTENCES, sentenceId);
+		}
+	}
+	@Override
+	public void removeSentenceId(IPostgresConnection conn, String sentenceId, IResult r) throws Exception {
+		synchronized(synchObject) {
+			data.deleteProperty(conn, SENTENCES, sentenceId, r);
 		}
 	}
 
@@ -113,42 +126,21 @@ public class ConcordanceWordGram  implements IWordGram {
 			return data.listProperty(SENTENCES);
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see org.topicquests.concordance.api.IWordGram#setGramType(java.lang.String)
-	 */
+	
 	@Override
-	public void setGramType(String t) {
-		data.setProperty(GRAM_TYPE, t);
-		environment.logDebug("ConcordanceWordGram.setGramType "+t);
-		if (t.equals(IWordGram.COUNT_1))
-			data.setProperty(GRAM_SIZE, "1");
-		else if (t.equals(IWordGram.COUNT_2))
-			data.setProperty(GRAM_SIZE, "2");
-		else if (t.equals(IWordGram.COUNT_3))
-			data.setProperty(GRAM_SIZE, "3");
-		else if (t.equals(IWordGram.COUNT_4))
-			data.setProperty(GRAM_SIZE, "4");
-		else if (t.equals(IWordGram.COUNT_5))
-			data.setProperty(GRAM_SIZE, "5");
-		else if (t.equals(IWordGram.COUNT_6))
-			data.setProperty(GRAM_SIZE, "6");
-		else if (t.equals(IWordGram.COUNT_7))
-			data.setProperty(GRAM_SIZE, "7");
-		else 
-			data.setProperty(GRAM_SIZE, "8");
+	public void setWordGramSize(int size) {
+		data.setProperty(GRAM_SIZE, Integer.toString(size));
 	}
 
-	/* (non-Javadoc)
-	 * @see org.topicquests.concordance.api.IWordGram#getGramType()
-	 */
 	@Override
-	public String getGramType() {
-		return (String)data.getProperty(GRAM_TYPE);
+	public void setWordGramSize(IPostgresConnection conn, int size, IResult r) throws Exception {
+		environment.logDebug("WordGram.setWordGramSize "+size+"\n"+data+"\n"+conn);
+		data.setProperty(conn, GRAM_SIZE, Integer.toString(size), r);
+		environment.logDebug("WordGram.setWordGramSize+");
 	}
 	
 	@Override
-	public int getGramSize() {
+	public int getWordGramSize() {
 		String x = (String)data.getProperty(GRAM_SIZE);
 		return Integer.parseInt(x);
 	}
@@ -161,6 +153,10 @@ public class ConcordanceWordGram  implements IWordGram {
 		synchronized(synchObject) {
 			data.addToSetProperty(WORD_IDS, wordId);
 		}
+	}
+	@Override
+	public void addWordId(IPostgresConnection conn, String wordId, IResult r) throws Exception {
+		data.addToSetProperty(conn, WORD_IDS, wordId, r);
 	}
 
 	/* (non-Javadoc)
@@ -179,12 +175,20 @@ public class ConcordanceWordGram  implements IWordGram {
 			data.addToSetProperty(TOPICS, topicLocator);
 		//}
 	}
-	
+	@Override
+	public void addTopicLocator(IPostgresConnection conn, String topicLocator, IResult r) throws Exception {
+		data.addToSetProperty(conn, TOPICS, topicLocator, r);
+	}
+
 	@Override
 	public void addSynonymId(String id) {
 		//synchronized(synchObject) {
 			data.addToSetProperty(SYNONYMS, id);
 		//}
+	}
+	@Override
+	public void addSynonymId(IPostgresConnection conn, String id, IResult r) throws Exception {
+		data.addToSetProperty(conn, SYNONYMS, id, r);
 	}
 
 	@Override
@@ -209,12 +213,32 @@ public class ConcordanceWordGram  implements IWordGram {
 			}		
 		}
 	}
+	@Override
+	public void substituteTopicLocator(IPostgresConnection conn, String oldLocator, String newLocator, IResult r)
+			throws Exception {
+		synchronized(synchObject) {
+			List<String> o = data.listProperty(TOPICS);
+			
+			if (o.isEmpty())
+				data.setProperty(conn, TOPICS, newLocator, r);
+			else {
+				if (o.contains(oldLocator))
+					data.updateProperty(conn, TOPICS, newLocator, oldLocator, r);
+				else
+					data.setProperty(conn, TOPICS, newLocator, r);
+			}		
+		}		
+	}
 
 	@Override
 	public void removeTopicLocator(String topicLocator) {
 		//synchronized(synchObject) {
 			data.deleteProperty(TOPICS, topicLocator);
 		//}
+	}
+	@Override
+	public void removeTopicLocator(IPostgresConnection conn, String topicLocator, IResult r) throws Exception {
+		data.deleteProperty(conn, TOPICS, topicLocator, r);
 	}
 
 	@Override
@@ -233,6 +257,11 @@ public class ConcordanceWordGram  implements IWordGram {
 		String did = wordId+".DID";
 		data.setProperty(did, daemonToken);
 	}
+	@Override
+	public void setDaemon(IPostgresConnection conn, String wordId, String daemonToken, IResult r) throws Exception {
+		String did = wordId+".DID";
+		data.setProperty(conn, did, daemonToken, r);
+	}
 
 	/* (non-Javadoc)
 	 * @see org.topicquests.concordance.api.IDictionary#getDaemon(java.lang.String)
@@ -247,6 +276,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setWords(String words) {
 		data.setLabel(words);
 	}
+	@Override
+	public void setWords(IPostgresConnection conn, String words, IResult r) throws Exception {
+		data.setLabel(conn, words, r);
+	}
 
 	@Override
 	public String getWords() {
@@ -254,33 +287,6 @@ public class ConcordanceWordGram  implements IWordGram {
 		return data.getLabel();
 	}
 
-	@Override
-	public void setCorrectedWordId(String id) {
-		//synchronized(synchObject) {
-			data.setProperty(CORRECTED_ID, id);
-		//}
-	}
-
-	@Override
-	public void setCorrectedWord(String word) {
-		//synchronized(synchObject) {
-			data.setProperty(CORRECTED_WORD, word);
-		//}
-	}
-
-	@Override
-	public String getCorrectedWordId() {
-		//synchronized(synchObject) {
-			return (String)data.getProperty(CORRECTED_ID);
-		//}
-	}
-
-	@Override
-	public String getCorrectedWord() {
-		//synchronized(synchObject) {
-			return (String)data.getProperty(CORRECTED_WORD);
-		//}
-	}
 
 	@Override
 	public int getNumberOfTopicLocators() {
@@ -295,6 +301,11 @@ public class ConcordanceWordGram  implements IWordGram {
 		//synchronized(synchObject) {
 			data.setProperty(this.REDIRECT_ID_PROPERTY, newWordGramId);
 		//}
+	}
+	@Override
+	public void setRedirectToId(IPostgresConnection conn, String newWordGramId, IResult r) throws Exception {
+		data.setProperty(conn, this.REDIRECT_ID_PROPERTY, newWordGramId, r);
+		
 	}
 
 	@Override
@@ -318,6 +329,10 @@ public class ConcordanceWordGram  implements IWordGram {
 			data.addToSetProperty(ATTRIBUTES, attribute);
 		//}
 	}
+	@Override
+	public void addAttribute(IPostgresConnection conn, String attribute, IResult r) throws Exception {
+		data.addToSetProperty(conn, ATTRIBUTES, attribute, r);		
+	}
 
 	@Override
 	public List<String> listAttributes() {
@@ -338,6 +353,11 @@ public class ConcordanceWordGram  implements IWordGram {
 	}
 
 	@Override
+	public void setIsInversePredicate(IPostgresConnection conn, IResult r) throws Exception {
+		data.setProperty(conn, IS_INVERSE_PREDICATE, "true", r);		
+	}
+
+	@Override
 	public boolean getIsInversePredicate() {
 		String which = (String)data.getProperty(IS_INVERSE_PREDICATE);
 		return (which != null);
@@ -347,7 +367,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setPredicateTense(String pastPresentFuture) {
 		data.setProperty(PREDICATE_TENSE, pastPresentFuture);
 	}
-
+	@Override
+	public void setPredicateTense(IPostgresConnection conn, String pastPresentFuture, IResult r) throws Exception {
+		data.setProperty(conn, PREDICATE_TENSE, pastPresentFuture, r);
+	}
 	@Override
 	public String getPredicateTense() {
 		return (String)data.getProperty(PREDICATE_TENSE);
@@ -356,6 +379,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void setIsNegativePredicate() {
 		data.setProperty(IS_NEGATIVE_PREDICATE, "true");		
+	}
+	@Override
+	public void setIsNegativePredicate(IPostgresConnection conn, IResult r) throws Exception {
+		data.setProperty(conn, IS_NEGATIVE_PREDICATE, "true", r);		
 	}
 
 	@Override
@@ -367,6 +394,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void setContradictionPredicateId(String id) {
 		data.setProperty(CONTRADICTION_ID, id);		
+	}
+	@Override
+	public void setContradictionPredicateId(IPostgresConnection conn, String id, IResult r) throws Exception {
+		data.setProperty(conn, CONTRADICTION_ID, id, r);		
 	}
 
 	@Override
@@ -383,6 +414,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setPredicatePropertyType(String typeLocator) {
 		data.setProperty(PROPERTY_TYPE, typeLocator);		
 	}
+	@Override
+	public void setPredicatePropertyType(IPostgresConnection conn, String typeLocator, IResult r) throws Exception {
+		data.setProperty(conn, PROPERTY_TYPE, typeLocator, r);		
+	}
 
 	@Override
 	public String getPredicatePropertyType() {
@@ -398,6 +433,10 @@ public class ConcordanceWordGram  implements IWordGram {
 		synchronized(synchObject) {
 			data.addToSetProperty(LEX_TYPES, lexType);
 		}
+	}
+	@Override
+	public void addLexType(IPostgresConnection conn, String t, IResult r) throws Exception {
+		data.addToSetProperty(conn, LEX_TYPES, t, r);
 	}
 
 	@Override
@@ -499,6 +538,11 @@ public class ConcordanceWordGram  implements IWordGram {
 	}
 
 	@Override
+	public void addExpectation(IPostgresConnection conn, String lexTyp, IResult r) throws Exception {
+		data.addToSetProperty(conn, EXPECTATIONS, lexTyp, r);
+	}
+
+	@Override
 	public List<String> listExpectations() {
 		//synchronized(synchObject) {
 			return data.listProperty(EXPECTATIONS);
@@ -559,27 +603,49 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void addIsNounType() {
 		String t = ILexTypes.NOUN;
-		if (this.getGramSize() > 1)
+		if (this.getWordGramSize() > 1)
 			t = ILexTypes.NOUN_PHRASE;
 		addLexType(t);
+	}
+	@Override
+	public void addIsNounType(IPostgresConnection conn, IResult r) throws Exception {
+		String t = ILexTypes.NOUN;
+		if (this.getWordGramSize() > 1)
+			t = ILexTypes.NOUN_PHRASE;
+		addLexType(conn, t, r);
 	}
 
 	@Override
 	public void addIsProperNounType() {
 		addLexType(ILexTypes.PROPER_NOUN);
 	}
+	@Override
+	public void addIsProperNounType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn,ILexTypes.PROPER_NOUN, r);
+	}
 
 	@Override
 	public void addIsGerundType() {
 		addLexType(ILexTypes.GERUND);
 	}
+	@Override
+	public void addIsGerundType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn,ILexTypes.GERUND, r);
+	}
 
 	@Override
 	public void addIsVerbType() {
 		String t = ILexTypes.VERB;
-		if (this.getGramSize() > 1)
+		if (this.getWordGramSize() > 1)
 			t = ILexTypes.VERB_PHRASE;
 		addLexType(t);
+	}
+	@Override
+	public void addIsVerbType(IPostgresConnection conn, IResult r) throws Exception {
+		String t = ILexTypes.VERB;
+		if (this.getWordGramSize() > 1)
+			t = ILexTypes.VERB_PHRASE;
+		addLexType(conn,t, r);
 	}
 
 	@Override
@@ -588,38 +654,71 @@ public class ConcordanceWordGram  implements IWordGram {
 	}
 
 	@Override
+	public void addIsAdverbType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn,ILexTypes.ADVERB,  r);
+	}
+
+	@Override
 	public void addIsAdjectiveType() {
 		addLexType(ILexTypes.ADJECTIVE);
 	}
-	
+	@Override
+	public void addIsAdjectiveType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.ADJECTIVE, r);
+	}
+
 	@Override
 	public void addIsDeterminerType() {
 		addLexType(ILexTypes.DETERMINER);
+	}
+	@Override
+	public void addIsDeterminerType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.DETERMINER, r);		
 	}
 
 	@Override
 	public void addIsPronounType() {
 		addLexType(ILexTypes.PRONOUN);
 	}
+	@Override
+	public void addIsPronounType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.PRONOUN, r);
+	}
 
 	@Override
 	public void addIsPrepositionType() {
 		addLexType(ILexTypes.PREPOSITION);
+	}
+	@Override
+	public void addIsPrepositionType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.PREPOSITION, r);
 	}
 
 	@Override
 	public void addIsConjunctionType() {
 		addLexType(ILexTypes.CONJUNCTION);
 	}
+	@Override
+	public void addIsConjunctionType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.CONJUNCTION, r);
+	}
 
 	@Override
 	public void addIsQuestionWordType() {
 		addLexType(ILexTypes.QUESTION_WORD);
 	}
+	@Override
+	public void addIsQuestionWordType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.QUESTION_WORD, r);
+	}
 	
 	@Override
 	public void addIsStopWordType() {
 		addLexType(ILexTypes.STOP_WORD);
+	}
+	@Override
+	public void addIsStopWordType(IPostgresConnection conn, IResult r) throws Exception {
+		addLexType(conn, ILexTypes.STOP_WORD, r);
 	}
 
 	@Override
@@ -627,6 +726,10 @@ public class ConcordanceWordGram  implements IWordGram {
 		synchronized(synchObject) {
 			data.addToSetProperty(LENS_CODES, code);
 		}
+	}
+	@Override
+	public void addLensCode(IPostgresConnection conn, String code, IResult r) throws Exception {
+		data.addToSetProperty(conn, LENS_CODES, code, r);
 	}
 
 	@Override
@@ -647,6 +750,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void removeLensCode(String code) {
 		data.deleteProperty(LENS_CODES, code);
+	}
+	@Override
+	public void removeLensCode(IPostgresConnection conn, String code, IResult r) throws Exception {
+		data.deleteProperty(conn, LENS_CODES, code, r);
 	}
 
 	String pluckGramId(String struct) {
@@ -678,6 +785,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setFormulaId(String id) {
 		data.setProperty(FORMULA_ID, id);
 	}
+	@Override
+	public void setFormulaId(IPostgresConnection conn, String id, IResult r) throws Exception {
+		data.setProperty(conn, FORMULA_ID, id, r);
+	}
 
 	@Override
 	public String getFormulaId() {
@@ -687,6 +798,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	@Override
 	public void setDbPediaURI(String uri) {
 		data.setProperty(DB_PEDIA_OBJECT, uri);
+	}
+	@Override
+	public void setDbPediaURI(IPostgresConnection conn, String uri, IResult r) throws Exception {
+		data.setProperty(conn, DB_PEDIA_OBJECT, uri, r);
 	}
 
 	@Override
@@ -717,6 +832,11 @@ public class ConcordanceWordGram  implements IWordGram {
 	}
 
 	@Override
+	public void addHypernymWord(IPostgresConnection conn, String word, IResult r) throws Exception {
+		data.addToSetProperty(conn, HYPERNYM_IDS, word, r);
+	}
+
+	@Override
 	public List<String> listHypernyms() {
 		//synchronized(synchObject) {
 			return data.listProperty(HYPERNYM_IDS);
@@ -733,6 +853,10 @@ public class ConcordanceWordGram  implements IWordGram {
 		//synchronized(synchObject) {
 			data.addToSetProperty(HYPONYM_IDS, word);
 		//}
+	}
+	@Override
+	public void addHyponymWord(IPostgresConnection conn, String word, IResult r) throws Exception {
+		data.addToSetProperty(conn, HYPONYM_IDS, word, r);
 	}
 
 	@Override
@@ -753,6 +877,10 @@ public class ConcordanceWordGram  implements IWordGram {
 			data.addToSetProperty(SYNONYM_IDS, word);
 		//}
 	}
+	@Override
+	public void addSynonym(IPostgresConnection conn, String word, IResult r) throws Exception {
+		data.addToSetProperty(conn, SYNONYM_IDS, word, r);
+	}
 
 	@Override
 	public List<String> listSynonyms() {
@@ -772,6 +900,10 @@ public class ConcordanceWordGram  implements IWordGram {
 			data.addToSetProperty(SEMFRAME_IDS, id);
 		//}
 	}
+	@Override
+	public void addSemanticFrameNodeId(IPostgresConnection conn, String id, IResult r) throws Exception {
+		data.addToSetProperty(conn, SEMFRAME_IDS, id, r);
+	}
 
 	@Override
 	public List<String> listSemanticFrameIds() {
@@ -790,6 +922,13 @@ public class ConcordanceWordGram  implements IWordGram {
 		// TODO Auto-generated method stub
 		throw new RuntimeException("ConcordenceWordGram.addRole not implemented");
 	}
+
+	@Override
+	public void addRole(IPostgresConnection conn, String sentenceId, String role, IResult r) throws Exception {
+		// TODO Auto-generated method stub
+		throw new RuntimeException("ConcordenceWordGram.addRole not implemented");	
+	}
+
 
 	@Override
 	public String getRole(String sentenceId) {
@@ -881,10 +1020,18 @@ public class ConcordanceWordGram  implements IWordGram {
 			data.addToSetProperty(LATTICE_TYPES, type);
 		//}
 	}
+	@Override
+	public void addLatticeType(IPostgresConnection conn, String type, IResult r) throws Exception {
+		data.addToSetProperty(conn, LATTICE_TYPES, type, r);
+	}
 
 	@Override
 	public void removeLatticeType(String type) {
 		data.deleteProperty(LATTICE_TYPES, type);
+	}
+	@Override
+	public void removeLatticeType(IPostgresConnection conn, String type, IResult r) throws Exception {
+		data.deleteProperty(conn, LATTICE_TYPES, type, r);
 	}
 
 	@Override
@@ -913,6 +1060,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setIsStopWord() {
 		data.setProperty(STOP_WORD_BOOLEAN, "T");
 	}
+	@Override
+	public void setIsStopWord(IPostgresConnection conn, IResult r) throws Exception {
+		data.setProperty(conn, STOP_WORD_BOOLEAN, "T", r);
+	}
 
 	@Override
 	public boolean getIsStopWord() {
@@ -923,6 +1074,10 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void setVersion(String version) {
 		data.addToSetProperty(VERSION, version);
 	}
+	@Override
+	public void setVersion(IPostgresConnection conn, String version, IResult r) throws Exception {
+		data.addToSetProperty(conn, VERSION, version, r);
+	}
 
 	@Override
 	public String getVersion() {
@@ -931,9 +1086,14 @@ public class ConcordanceWordGram  implements IWordGram {
 
 	@Override
 	public void setLemma(String lemma) {
-		synchronized(synchObject) {
-			data.addToSetProperty(LEMMA, lemma);
-		}
+		//synchronized(synchObject) {
+		data.addToSetProperty(LEMMA, lemma);
+		//}
+	}
+
+	@Override
+	public void setLemma(IPostgresConnection conn, String lemma, IResult r) throws Exception {
+		data.addToSetProperty(conn, LEMMA, lemma, r);
 	}
 
 	@Override
@@ -951,11 +1111,56 @@ public class ConcordanceWordGram  implements IWordGram {
 	public void addOntReference(String uri) {
 		data.addToSetProperty(ONT_REF_LIST, uri);
 	}
+	@Override
+	public void addOntReference(IPostgresConnection conn, String uri, IResult r) throws Exception {
+		data.addToSetProperty(conn, ONT_REF_LIST, uri, r);		
+	}
 
 	@Override
 	public List<String> listOntReferences() {
 		return data.listProperty(ONT_REF_LIST);
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

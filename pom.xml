@@ -172,7 +172,7 @@
 		<dependency>
 			<groupId>org.topicquests</groupId>
 			<artifactId>blueprints-sql-provider</artifactId>
-			<version>0.16.0-SNAPSHOT</version>
+			<version>0.17.0-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.fasterxml.jackson.core</groupId>
@@ -191,7 +191,7 @@
 		<dependency>
 			<groupId>org.topicquests</groupId>
 			<artifactId>tqos-asr-api</artifactId>
-			<version>0.6.0-SNAPSHOT</version>
+			<version>0.8.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.minidev</groupId>

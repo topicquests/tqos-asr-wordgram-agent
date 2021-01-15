@@ -18,8 +18,9 @@ public class TestFramework {
 	public static void main(String[] args) {
 		//new BootTest();
 		//new FirstTest();
-		new BootstrapVocab();
+		//new BootstrapVocab();
 		//new CollectionTest();
+		new SimpleTest();
 
 	}
 

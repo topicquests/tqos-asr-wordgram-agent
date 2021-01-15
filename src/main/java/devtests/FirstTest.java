@@ -28,7 +28,7 @@ public class FirstTest extends TestRoot {
 	public FirstTest() {
 		environment.logDebug("STARTING "+wordGramThread);
 		JSONObject jo = new JSONObject();
-		jo.put(IConstants.THE_WORD, SENTENCE2);
+		jo.put(IConstants.THE_WORD, PAIR);
 		jo.put(IConstants.USER_ID, "SystemUser");
 		//skip sentenceId
 		wordGramThread.addTextTask(jo);
